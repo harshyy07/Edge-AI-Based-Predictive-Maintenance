@@ -1,0 +1,9 @@
+numpy
+scipy
+scikit-learn
+matplotlib
+pandas
+joblib
+streamlit>=1.37
+paho-mqtt
+plotly
