@@ -39,3 +39,8 @@ env/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Large raw datasets
+data_mafaulda/
+sample_data/
+selected_manifest.json

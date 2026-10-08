@@ -53,11 +53,11 @@ def export_rf_to_c(clf, path):
 if __name__ == "__main__":
     os.makedirs("results", exist_ok=True)
     X, y = make_dataset(400, seed=0)
-    Xtr, Xte, ytr, yte = train_test_split(X, y, test_size=0.25, stratify=y, random_state=1)
-    clf = RandomForestClassifier(n_estimators=10, max_depth=6, random_state=0).fit(Xtr, ytr)
+    Xtr, Xte, ytr, yte = train_test_split(X, y, test_size=0.20, stratify=y, random_state=42)
+    clf = RandomForestClassifier(n_estimators=16, max_depth=8, random_state=42).fit(Xtr, ytr)
     pred = clf.predict(Xte)
     print(classification_report(yte, pred, target_names=CLASSES, digits=3))
-    cv = cross_val_score(RandomForestClassifier(n_estimators=10, max_depth=6, random_state=0), X, y, cv=5)
+    cv = cross_val_score(RandomForestClassifier(n_estimators=16, max_depth=8, random_state=42), X, y, cv=5)
     print(f"5-fold CV accuracy: {cv.mean():.3f} +/- {cv.std():.3f}")
 
     ConfusionMatrixDisplay(confusion_matrix(yte, pred), display_labels=CLASSES).plot(xticks_rotation=30, cmap="Blues")

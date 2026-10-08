@@ -381,7 +381,7 @@ def live():
                 margin=dict(l=40, r=20, t=40, b=40),
                 height=280
             )
-            st.plotly_chart(fig_time, use_container_width=True, key=f"time_{time.time()}")
+            st.plotly_chart(fig_time, use_container_width=True, key="fig_time_wave")
 
         with plot_col2:
             fr, F = spectrum(x)
@@ -406,7 +406,7 @@ def live():
                 margin=dict(l=40, r=20, t=40, b=40),
                 height=280
             )
-            st.plotly_chart(fig_fft, use_container_width=True, key=f"fft_{time.time()}")
+            st.plotly_chart(fig_fft, use_container_width=True, key="fig_fft_spec")
 
     # 3. Model Class Distribution (Confidence breakdown)
     if all_probas is not None:
@@ -434,7 +434,7 @@ def live():
                 height=180,
                 margin=dict(l=20, r=20, t=20, b=20)
             )
-            st.plotly_chart(fig_bar, use_container_width=True, key=f"prob_{time.time()}")
+            st.plotly_chart(fig_bar, use_container_width=True, key="fig_class_probas")
 
     # 4. Edge vs Cloud Architecture Comparison
     st.markdown("### 🌐 Architecture Comparison: Edge vs Cloud")

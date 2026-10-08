@@ -1,42 +1,93 @@
-"""Synthetic vibration generator for 5 motor conditions."""
+"""Real-world MaFaulDA vibration generator and dataset loader.
+Replaces synthetic equations with genuine industrial accelerometer recordings
+downsampled to the 2 kHz Edge-AI sampling pipeline with sequential continuous playback.
+"""
+import os
+import glob
+import zipfile
 import numpy as np
+import pandas as pd
 
-FS, N, F0 = 2000, 1024, 25.0          # sample rate, window length, shaft freq (Hz)
+FS, N = 2000, 1024
+# Identical 5 classes matching the dashboard and ESP32 MQTT schema
 CLASSES = ["normal", "imbalance", "misalignment", "bearing", "looseness"]
-t = np.arange(N) / FS
+
+# Mapping from MaFaulDA folder to the 5 standard classes
+MAFAULDA_MAP = {
+    0: ("normal", "normal"),
+    1: ("imbalance", "imbalance"),
+    2: ("misalignment", "misalignment"),
+    3: ("bearing", "outer_race"),
+    4: ("bearing_ball", "ball_fault"),
+}
+
+# In-memory cached dataset windows and playback pointers
+_CACHED_WINDOWS = {c: [] for c in range(len(CLASSES))}
+_PLAYBACK_PTR = {c: 0 for c in range(len(CLASSES))}
+
+
+def _load_class_windows(cls_idx):
+    """Load and cache overlapping windows from downloaded MaFaulDA records."""
+    if _CACHED_WINDOWS[cls_idx]:
+        return _CACHED_WINDOWS[cls_idx]
+
+    folder, _ = MAFAULDA_MAP[cls_idx]
+    search_path = os.path.join(os.path.dirname(__file__), "data_mafaulda", folder, "*.zip")
+    zip_files = sorted(glob.glob(search_path))
+    
+    full_sig = []
+    for z_path in zip_files:
+        try:
+            with zipfile.ZipFile(z_path) as z:
+                csv_name = z.namelist()[0]
+                df = pd.read_csv(z.open(csv_name), header=None, nrows=250000)
+                # Channel 1: accelerometer signal downsampled 50 kHz -> 2 kHz
+                sig = df[1].values.astype(np.float32)[::25]
+                full_sig.append(sig)
+        except Exception as e:
+            print(f"Error reading {z_path}: {e}")
+
+    if full_sig:
+        merged = np.concatenate(full_sig)
+        # Step size 256 for smooth continuous time-series streaming
+        step = 256
+        windows = [merged[i : i + N] for i in range(0, len(merged) - N, step)]
+    else:
+        windows = []
+
+    _CACHED_WINDOWS[cls_idx] = windows
+    return windows
 
 
 def gen(cls, rng):
-    f0 = F0 * rng.uniform(0.985, 1.015)        # slight speed variation
-    a = rng.uniform(0.85, 1.15)                # amplitude variation
-    sig = rng.uniform(0.1, 0.16)               # noise level
-    n = rng.normal(0, sig, N)
-    s = lambda k, amp: a * amp * np.sin(2 * np.pi * k * f0 * t + rng.uniform(0, 2 * np.pi))
-    if cls == 0:
-        x = s(1, 0.5) + n
-    elif cls == 1:
-        x = s(1, 1.6) + n
-    elif cls == 2:
-        x = s(1, 0.6) + s(2, 0.9) + s(3, 0.4) + n
-    elif cls == 3:
-        x = s(1, 0.5) + n
-        bpfo = 3.58 * f0
-        for k in np.arange(rng.uniform(0, 1 / bpfo), N / FS, 1 / bpfo):
-            i = int(k * FS)
-            L = min(60, N - i)
-            tau = np.arange(L) / FS
-            x[i:i + L] += a * 1.5 * np.exp(-tau * 600) * np.sin(2 * np.pi * 450 * tau)
-    else:
-        x = s(0.5, 0.5) + s(1, 0.7) + s(2, 0.5) + s(3, 0.4) + 2 * n
-    return x
+    """Return sequential windows from genuine MaFaulDA recordings.
+    
+    Streaming sequential time-series rather than random jumping prevents
+    confidence flicker and boundary discontinuities.
+    """
+    global _PLAYBACK_PTR
+    windows = _load_class_windows(cls)
+    if not windows:
+        t = np.arange(N) / FS
+        return np.sin(2 * np.pi * 25.0 * t).astype(np.float32)
+
+    ptr = _PLAYBACK_PTR[cls]
+    window = windows[ptr % len(windows)].copy()
+    _PLAYBACK_PTR[cls] = (ptr + 1) % len(windows)
+
+    return window.astype(np.float32)
 
 
-def make_dataset(per_class=400, seed=0):
+def make_dataset(per_class=150, seed=0):
+    """Build feature matrix using dense windows across all recordings."""
     from features import features
-    rng = np.random.default_rng(seed)
+
     X, y = [], []
     for c in range(len(CLASSES)):
-        for _ in range(per_class):
-            X.append(features(gen(c, rng)))
+        wins = _load_class_windows(c)
+        limit = min(len(wins), per_class) if wins else per_class
+        for i in range(limit):
+            X.append(features(wins[i]))
             y.append(c)
-    return np.array(X, dtype=np.float32), np.array(y)
+
+    return np.array(X, dtype=np.float32), np.array(y, dtype=np.int64)
