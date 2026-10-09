@@ -59,7 +59,13 @@ Instead of streaming bandwidth-heavy raw vibration data to a cloud server, this 
 ├── data_gen.py            # Physics-based synthetic vibration generator
 ├── edge_vs_cloud.py       # Latency and bandwidth benchmark simulation
 ├── edge_features.h        # C implementation of feature extraction for ESP32
-├── model.h                # Exported C code of trained Random Forest
+├── model.h                # Exported C code of trained Random Forest (synthetic)
+├── model_mafaulda.h       # Exported C code trained on MaFaulDA dataset
+├── model_combined.h       # Exported C code trained on combined MaFaulDA + CWRU (97.9% Acc)
+├── train_mafaulda.py      # Real-world MaFaulDA training pipeline
+├── train_combined.py      # Combined MaFaulDA + CWRU training pipeline
+├── download_sample.py     # Script to pull targeted MaFaulDA files
+├── download_cwru.py       # Script to pull CWRU .mat benchmark files
 ├── sketch.ino             # ESP32 firmware for Wokwi simulation / hardware
 ├── diagram.json           # Wokwi simulation hardware wiring
 ├── libraries.txt          # Arduino / Wokwi libraries

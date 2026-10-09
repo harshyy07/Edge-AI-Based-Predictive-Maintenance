@@ -42,5 +42,7 @@ Thumbs.db
 
 # Large raw datasets
 data_mafaulda/
+data_cwru/
 sample_data/
 selected_manifest.json
+*.joblib

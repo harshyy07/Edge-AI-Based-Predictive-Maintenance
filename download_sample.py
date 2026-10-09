@@ -4,8 +4,9 @@ import json
 import time
 from kaggle.api.kaggle_api_extended import KaggleApi
 
-os.environ['KAGGLE_USERNAME'] = 'harshyy07'
-os.environ['KAGGLE_KEY'] = 'KGAT_eddf998d6a7cf8c622a34a489b89b646'
+# Load credentials from environment if available
+os.environ.setdefault('KAGGLE_USERNAME', os.getenv('KAGGLE_USERNAME', 'harshyy07'))
+os.environ.setdefault('KAGGLE_KEY', os.getenv('KAGGLE_KEY', ''))
 
 api = KaggleApi()
 api.authenticate()
