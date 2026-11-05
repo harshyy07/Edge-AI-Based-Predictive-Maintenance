@@ -13,15 +13,19 @@
 #include "edge_features.h"
 #include "model.h"
 
-#define USE_REAL_MPU 0
+#define USE_REAL_MPU 1
 #define POT_PIN 34
 #define LED_OK 26
 #define LED_FAULT 27
 #define F0 25.0f
 
-const char *WIFI_SSID = "Wokwi-GUEST";
+const char *WIFI_SSID = "123456";
+const char *WIFI_PASSWORD = "77777777";
+
+// MQTT configuration
 const char *MQTT_HOST = "broker.hivemq.com";
-const char *MQTT_TOPIC = "yourname_motor_edge/status";   // CHANGE to something unique
+const int MQTT_PORT = 1883;
+const char *MQTT_TOPIC = "esp32motor_7f3a/status";
 const char *NAMES[5] = {"normal", "imbalance", "misalignment", "bearing", "looseness"};
 
 WiFiClient wifi;
@@ -75,13 +79,47 @@ void acquire_real() {                                     // 2 kHz sampling of M
 #endif
 
 void connect_net() {
+  // Connect ESP32 to mobile hotspot
   if (WiFi.status() != WL_CONNECTED) {
-    WiFi.begin(WIFI_SSID, "", 6);
-    while (WiFi.status() != WL_CONNECTED) delay(200);
+
+    WiFi.mode(WIFI_STA);
+
+    Serial.println("Connecting to mobile hotspot...");
+
+    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+
+    unsigned long startTime = millis();
+
+    while (WiFi.status() != WL_CONNECTED &&
+           millis() - startTime < 20000) {
+      delay(500);
+      Serial.print(".");
+    }
+
+    if (WiFi.status() != WL_CONNECTED) {
+      Serial.println("\nWiFi connection failed!");
+      return;
+    }
+
+    Serial.println("\nWiFi connected!");
+    Serial.print("ESP32 IP Address: ");
+    Serial.println(WiFi.localIP());
   }
-  while (!mqtt.connected()) {
-    mqtt.connect(("esp32-" + String(random(0xffff), HEX)).c_str());
-    if (!mqtt.connected()) delay(500);
+
+  // Connect to MQTT broker
+  if (!mqtt.connected()) {
+
+    Serial.println("Connecting to MQTT...");
+
+    String clientId = "ESP32-" + String(random(0xffff), HEX);
+
+    if (mqtt.connect(clientId.c_str())) {
+      Serial.println("MQTT connected!");
+    }
+    else {
+      Serial.print("MQTT connection failed. State: ");
+      Serial.println(mqtt.state());
+    }
   }
 }
 

@@ -239,8 +239,14 @@ with st.sidebar:
     else:
         st.markdown("---")
         st.markdown("#### 🌐 MQTT Broker Settings")
-        broker = st.text_input("Broker Host", "broker.hivemq.com")
-        topic = st.text_input("Vibration Topic", "yourname_motor_edge/status")
+        broker = st.text_input(
+        "Broker Host",
+        "broker.hivemq.com"
+        )
+        topic = st.text_input(
+        "Vibration Topic",
+        "esp32motor_7f3a/status"
+        )
         st.caption("Firmware publishes JSON payloads like `{\"s\":\"normal\", \"c\":0.98}`.")
 
     st.markdown("---")
