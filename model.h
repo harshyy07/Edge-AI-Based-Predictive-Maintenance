@@ -68,7 +68,7 @@ static void rf_tree_0(const float *x, float *p) {
 }
 
 static void rf_tree_1(const float *x, float *p) {
-  if (x[4] <= -0.884638488f) {
+  if (x[4] <= -0.884638518f) {
     p[4]+=1.0f;
   } else {
     if (x[9] <= 0.741619229f) {
@@ -95,7 +95,7 @@ static void rf_tree_1(const float *x, float *p) {
           } else {
             if (x[7] <= 0.565145299f) {
               if (x[5] <= 1.17207766f) {
-                if (x[3] <= -0.856808424f) {
+                if (x[3] <= -0.856808543f) {
                   p[2]+=1.0f;
                 } else {
                   p[3]+=1.0f;
@@ -124,7 +124,7 @@ static void rf_tree_1(const float *x, float *p) {
 }
 
 static void rf_tree_2(const float *x, float *p) {
-  if (x[4] <= -0.884638488f) {
+  if (x[4] <= -0.884638518f) {
     p[4]+=1.0f;
   } else {
     if (x[8] <= 0.525377214f) {
@@ -154,7 +154,7 @@ static void rf_tree_2(const float *x, float *p) {
             }
           }
         } else {
-          if (x[4] <= -0.585156217f) {
+          if (x[4] <= -0.585156158f) {
             p[2]+=1.0f;
           } else {
             if (x[11] <= 0.970855087f) {
@@ -224,7 +224,7 @@ static void rf_tree_3(const float *x, float *p) {
             }
           } else {
             if (x[10] <= 1.28295827f) {
-              if (x[4] <= -0.417859942f) {
+              if (x[4] <= -0.417859972f) {
                 p[3]+=1.0f;
               } else {
                 p[2]+=1.0f;
@@ -388,7 +388,7 @@ static void rf_tree_7(const float *x, float *p) {
     if (x[8] <= 0.525377214f) {
       if (x[11] <= 0.954296619f) {
         if (x[7] <= 0.685347527f) {
-          if (x[4] <= -0.310857847f) {
+          if (x[4] <= -0.310857832f) {
             if (x[6] <= 100.585938f) {
               p[3]+=1.0f;
             } else {
@@ -414,7 +414,7 @@ static void rf_tree_7(const float *x, float *p) {
         }
       } else {
         if (x[7] <= 0.757637307f) {
-          if (x[3] <= -0.874634504f) {
+          if (x[3] <= -0.874634385f) {
             if (x[8] <= 0.237824127f) {
               if (x[11] <= 0.972108513f) {
                 p[2]+=1.0f;
@@ -440,7 +440,7 @@ static void rf_tree_7(const float *x, float *p) {
                 }
               }
             } else {
-              if (x[4] <= -0.440713912f) {
+              if (x[4] <= -0.440713897f) {
                 if (x[1] <= 3.60469997f) {
                   p[3]+=1.0f;
                 } else {
@@ -495,7 +495,7 @@ static void rf_tree_8(const float *x, float *p) {
           if (x[7] <= 0.319783613f) {
             p[2]+=1.0f;
           } else {
-            if (x[4] <= -0.561333865f) {
+            if (x[4] <= -0.561333895f) {
               p[2]+=1.0f;
             } else {
               p[3]+=1.0f;
@@ -532,7 +532,7 @@ static void rf_tree_8(const float *x, float *p) {
 }
 
 static void rf_tree_9(const float *x, float *p) {
-  if (x[4] <= -0.884638488f) {
+  if (x[4] <= -0.884638518f) {
     p[4]+=1.0f;
   } else {
     if (x[9] <= 0.747252077f) {
@@ -587,7 +587,7 @@ static void rf_tree_9(const float *x, float *p) {
               p[3]+=1.0f;
             } else {
               if (x[4] <= -0.401359558f) {
-                if (x[3] <= -0.707746506f) {
+                if (x[3] <= -0.707746387f) {
                   p[2]+=1.0f;
                 } else {
                   p[2]+=0.333333333f; p[3]+=0.666666667f;
@@ -641,7 +641,7 @@ static void rf_tree_10(const float *x, float *p) {
           p[1]+=1.0f;
         }
       } else {
-        if (x[3] <= -0.784895301f) {
+        if (x[3] <= -0.784895182f) {
           p[0]+=1.0f;
         } else {
           p[1]+=1.0f;
@@ -667,7 +667,7 @@ static void rf_tree_10(const float *x, float *p) {
           }
         }
       } else {
-        if (x[3] <= -0.509996772f) {
+        if (x[3] <= -0.509996653f) {
           if (x[11] <= 0.948363006f) {
             if (x[2] <= 3.12056744f) {
               if (x[11] <= 0.893285632f) {
@@ -774,7 +774,7 @@ static void rf_tree_12(const float *x, float *p) {
         }
       } else {
         if (x[0] <= 1.22255796f) {
-          if (x[3] <= -0.509996772f) {
+          if (x[3] <= -0.509996653f) {
             if (x[1] <= 3.58714998f) {
               if (x[10] <= 1.30442721f) {
                 p[2]+=1.0f;
