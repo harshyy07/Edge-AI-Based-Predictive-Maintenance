@@ -8,6 +8,16 @@ from data_gen import gen, CLASSES, FS, N
 from features import features, spectrum
 from edge_vs_cloud import NetSim, EDGE_MS_ESP32
 
+CLASS_DISPLAY_NAMES = {
+    "normal": "Normal",
+    "motor_stopped": "Motor stopped",
+    "imbalance": "Imbalance",
+    "misalignment": "Misalignment",
+    "bearing_outer": "Bearing outer race",
+    "bearing_ball": "Bearing ball fault",
+    "sensor_error": "Sensor error",
+}
+
 st.set_page_config(
     page_title="EdgeAI Motor Sense | Predictive Maintenance",
     page_icon="⚡",
@@ -137,6 +147,17 @@ code, pre, .stCode {
     border: 1px solid rgba(52, 211, 153, 0.35);
 }
 
+.status-pill-idle {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 700;
+    background: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+    border: 1px solid rgba(251, 191, 36, 0.35);
+}
+
 .status-pill-alert {
     display: inline-block;
     padding: 4px 12px;
@@ -218,7 +239,7 @@ S.setdefault("last_state", None)
 # Sidebar Design
 with st.sidebar:
     st.markdown("### ⚙️ Telemetry Configuration")
-    source = st.radio("📡 Data Source", ["Simulator", "MQTT (Wokwi / Hardware)"], index=0)
+    source = st.radio("📡 Data Source", ["Simulator", "MQTT (Wokwi / Hardware)"], index=1)
 
     if source == "Simulator":
         st.markdown("---")
@@ -231,8 +252,8 @@ with st.sidebar:
                 "normal": "🟢 Normal Baseline",
                 "imbalance": "🟠 Mass Imbalance",
                 "misalignment": "🟡 Shaft Misalignment",
-                "bearing": "🔴 Bearing Outer Race",
-                "looseness": "🟣 Mechanical Looseness"
+                "bearing_outer": "🔴 Bearing Outer Race",
+                "bearing_ball": "🟣 Bearing Ball Fault"
             }.get(s, s.capitalize())
         )
         st.info("💡 Adjust the condition to observe real-time model re-classification & spectral harmonic changes.")
@@ -247,7 +268,7 @@ with st.sidebar:
         "Vibration Topic",
         "esp32motor_7f3a/status"
         )
-        st.caption("Firmware publishes JSON payloads like `{\"s\":\"normal\", \"c\":0.98}`.")
+        st.caption("Firmware publishes state, confidence, and local alert status over MQTT.")
 
     st.markdown("---")
     if st.button("🧹 Reset Counters & Logs", use_container_width=True):
@@ -258,8 +279,8 @@ with st.sidebar:
     st.markdown(
         "<div style='font-size:0.75rem; color:#64748b; line-height:1.4;'>"
         "<b>Edge AI Motor Guardian v2.1</b><br>"
-        "TinyML Edge Random Forest (10 Trees) deployed to ESP32.<br>"
-        "Vibration sampling @ 2.0 kHz.</div>",
+        "TinyML Random Forest running on the ESP32.<br>"
+        "Model input: 1,024 samples at the MPU6050's 1.0 kHz output rate.</div>",
         unsafe_allow_html=True
     )
 
@@ -286,6 +307,7 @@ def live():
     clf = load_model()
     x = None
     all_probas = None
+    packet_age = None
 
     if source == "Simulator":
         c = CLASSES.index(fault)
@@ -304,27 +326,34 @@ def live():
             st.warning("⏳ Waiting for inbound MQTT packets from ESP32 on topic `" + topic + "`...")
             return
         label, conf = store["msg"].get("s", "unknown"), float(store["msg"].get("c", 0.0))
+        packet_age = max(0.0, time.time() - store["ts"])
+        alert_active = bool(store["msg"].get("a", label != "normal"))
         if store["count"] != S.get("mq_count"):
             S.mq_count = store["count"]
             S.edge_B += len(json.dumps(store["msg"])) + 60
             S.cloud_B += N * 2 + 60
 
     healthy = (label == "normal")
+    stopped = (label == "motor_stopped")
+    if source == "Simulator":
+        alert_active = not healthy
+    elif packet_age > 5:
+        st.warning(f"No new board packet for {packet_age:.0f} seconds. Showing the last received result.")
 
     # 1. Top KPI Row
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
         status_html = (
-            f'<div class="status-pill-ok">● HEALTHY</div>'
-            if healthy else
+            f'<div class="status-pill-ok">● HEALTHY</div>' if healthy else
+            f'<div class="status-pill-idle">■ MOTOR STOPPED</div>' if stopped else
             f'<div class="status-pill-alert">▲ FAULT DETECTED</div>'
         )
         st.markdown(f"""
         <div class="kpi-card">
             <div class="kpi-label">Machine Health Status</div>
             <div style="margin-top: 6px;">{status_html}</div>
-            <div class="kpi-sub">Continuous Real-time Evaluation</div>
+            <div class="kpi-sub">Local buzzer alert: {'ACTIVE' if alert_active else 'off'}</div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -332,7 +361,7 @@ def live():
         st.markdown(f"""
         <div class="kpi-card">
             <div class="kpi-label">Predicted Diagnostics</div>
-            <div class="kpi-val" style="color: {'#34d399' if healthy else '#f87171'};">{label.capitalize()}</div>
+            <div class="kpi-val" style="color: {'#34d399' if healthy else '#fbbf24' if stopped else '#f87171'};">{CLASS_DISPLAY_NAMES.get(label, label.replace('_', ' ').title())}</div>
             <div class="kpi-sub">Classification output</div>
         </div>
         """, unsafe_allow_html=True)
@@ -418,7 +447,7 @@ def live():
     if all_probas is not None:
         with st.expander("📊 Diagnostic Class Probability Distribution", expanded=False):
             prob_df = pd.DataFrame({
-                "Fault Class": [c.capitalize() for c in CLASSES],
+                "Fault Class": [CLASS_DISPLAY_NAMES.get(c, c.replace("_", " ").title()) for c in CLASSES],
                 "Probability": all_probas
             })
             fig_bar = go.Figure(go.Bar(
@@ -502,7 +531,7 @@ def live():
                 badge = "✔ OK" if is_ok else "⚠ FAULT"
                 entries.append(
                     f"<div class='log-entry'><span style='color:#64748b; margin-right:12px;'>[{ts}]</span> "
-                    f"<span class='{cls_name}'>{badge}: {state.upper()}</span> "
+                    f"<span class='{cls_name}'>{badge}: {state.upper().replace('_', ' ')}</span> "
                     f"<span style='color:#94a3b8; margin-left:8px;'>(Confidence: {c_val*100:.1f}%)</span></div>"
                 )
             else:

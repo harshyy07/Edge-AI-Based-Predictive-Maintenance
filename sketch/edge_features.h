@@ -1,7 +1,7 @@
 // Feature extraction identical to ../features.py (pure C++, host-testable).
 #pragma once
 #include <math.h>
-#define FS 2000
+#define FS 1000
 #define WIN_N 1024
 
 static float g_re[WIN_N], g_im[WIN_N];
@@ -40,7 +40,7 @@ static void compute_features(const float *x, float *f) {
 
   for (int i = 0; i < WIN_N; i++) { g_re[i] = x[i] * (0.5f - 0.5f * cosf(2.0f * (float)M_PI * i / (WIN_N - 1))); g_im[i] = 0; }
   fft_inplace();
-  const float lo[5] = {0, 40, 80, 150, 500}, hi[5] = {40, 80, 150, 500, 1000};
+  const float lo[5] = {0, 20, 40, 80, 200}, hi[5] = {20, 40, 80, 200, 500};
   float b[5] = {0, 0, 0, 0, 0}, best = -1; int bi = 0;
   for (int k = 0; k <= WIN_N / 2; k++) {
     float m = sqrtf(g_re[k] * g_re[k] + g_im[k] * g_im[k]) / WIN_N, fr = (float)k * FS / WIN_N;
@@ -48,5 +48,7 @@ static void compute_features(const float *x, float *f) {
     for (int j = 0; j < 5; j++) if (fr >= lo[j] && fr < hi[j]) b[j] += m;
   }
   f[6] = (float)bi * FS / WIN_N;
-  for (int j = 0; j < 5; j++) f[7 + j] = b[j];
+  float total_band = 0;
+  for (int j = 0; j < 5; j++) total_band += b[j];
+  for (int j = 0; j < 5; j++) f[7 + j] = b[j] / (total_band + 1e-12f);
 }

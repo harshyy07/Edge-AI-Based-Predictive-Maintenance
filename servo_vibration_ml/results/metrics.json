@@ -1,0 +1,79 @@
+{
+  "evaluation_scope": "synthetic evaluation; not real-fault validation",
+  "sampling_hz": 200,
+  "window_samples": 200,
+  "feature_names": [
+    "ax_mean",
+    "ax_std",
+    "ax_rms",
+    "ax_peak",
+    "ay_mean",
+    "ay_std",
+    "ay_rms",
+    "ay_peak",
+    "az_mean",
+    "az_std",
+    "az_rms",
+    "az_peak"
+  ],
+  "train_windows": 225,
+  "test_windows": 75,
+  "train_groups": 225,
+  "test_groups": 75,
+  "provenance_counts": {
+    "synthetic": 300
+  },
+  "accuracy": 0.96,
+  "macro_f1": 0.9631942760126123,
+  "classification_report": {
+    "ABNORMAL_VIBRATION": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 13.0
+    },
+    "HIGH_FRICTION": {
+      "precision": 0.9285714285714286,
+      "recall": 0.9285714285714286,
+      "f1-score": 0.9285714285714286,
+      "support": 14.0
+    },
+    "IRREGULAR_MOVEMENT": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 10.0
+    },
+    "MOUNTING_LOOSENESS": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 13.0
+    },
+    "NORMAL": {
+      "precision": 0.9333333333333333,
+      "recall": 0.875,
+      "f1-score": 0.9032258064516129,
+      "support": 16.0
+    },
+    "STOP": {
+      "precision": 0.9,
+      "recall": 1.0,
+      "f1-score": 0.9473684210526315,
+      "support": 9.0
+    },
+    "accuracy": 0.96,
+    "macro avg": {
+      "precision": 0.9603174603174605,
+      "recall": 0.9672619047619048,
+      "f1-score": 0.9631942760126123,
+      "support": 75.0
+    },
+    "weighted avg": {
+      "precision": 0.9604444444444444,
+      "recall": 0.96,
+      "f1-score": 0.9597057159026599,
+      "support": 75.0
+    }
+  }
+}

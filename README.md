@@ -1,137 +1,41 @@
-# Edge-AI Based Predictive Maintenance and Motor Fault Detection
+# Servo Vibration Monitoring with Edge AI
 
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![Streamlit](https://img.shields.io/badge/Streamlit-1.37+-FF4B4B.svg)](https://streamlit.io/)
-[![TinyML](https://img.shields.io/badge/TinyML-ESP32-green.svg)](https://wokwi.com/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+This project now uses the servo MPU6050 capture workflow as its primary run path. It samples at 200 Hz, records one-second windows, trains a separate servo classifier, and exports an ESP32-oriented C model header. The earlier industrial motor trainer, its datasets, firmware, and model headers remain available as a legacy workflow and are not replaced by servo training.
 
-An end-to-end TinyML and IoT system for real-time condition-based monitoring (CBM) of industrial motors using vibration sensing.
+## Quick start
 
-Instead of streaming bandwidth-heavy raw vibration data to a cloud server, this project implements an **on-device Machine Learning pipeline on an ESP32 microcontroller**. The ESP32 extracts time and spectral features locally, executes a compiled Random Forest classifier, and transmits only lightweight diagnostic alerts over MQTT.
+Install the Python dependencies, including `pyserial` for capture:
 
----
-
-## ⚡ Key Highlights & Results
-
-- **>95% Bandwidth Reduction**: Transmits only ~30-byte JSON diagnostic telemetry (`{"s": "bearing", "c": 0.96}`) instead of streaming 2+ KB raw sensor windows every cycle.
-- **Ultra-low Decision Latency**: Local inference latency of ~20 ms on ESP32 vs ~125–170 ms round-trip time in cloud setups.
-- **Zero-Dependency TinyML Export**: The Random Forest model is exported directly into pure C header code (`model.h`), fitting within only ~5.1 KB of flash memory.
-- **Modern Live Dashboard**: Interactive dark-themed Streamlit UI with real-time waveform inspection, FFT harmonics, fault injection simulator, and MQTT stream listener.
-
----
-
-## 🏗️ System Architecture
-
-```text
-[Vibration Sensor (MPU6050 / Sim)]
-               │
-               ▼
-   [Windowing (1024 samples @ 2 kHz)]
-               │
-               ▼
-[Feature Extraction (12 Time & Spectral Features)]
-               │
-               ▼
- [TinyML Random Forest (Compiled in model.h)]
-               │
-               ▼  (Inference Result: ~30 bytes)
-        [MQTT Broker]
-               │
-               ▼
-[Streamlit Live Monitoring Dashboard]
+```powershell
+python -m pip install -r requirements.txt
 ```
 
-### 5 Detectable Motor Conditions:
-1. **Normal Baseline**: Low background vibration and weak 1X shaft harmonic.
-2. **Mass Imbalance**: Strong fundamental harmonic (1X, 25 Hz).
-3. **Shaft Misalignment**: Elevated 2X and 3X shaft harmonics (50 Hz, 75 Hz).
-4. **Bearing Outer Race Fault**: High-frequency periodic impulses exciting resonance (~450 Hz).
-5. **Mechanical Looseness**: 0.5X sub-harmonic, fractional harmonics, and higher random noise.
+Connect the MPU6050 to the ESP32 collector, then capture labeled samples:
 
----
-
-## 📁 Repository Structure
-
-```text
-├── dashboard.py           # Streamlit real-time monitoring dashboard
-├── train.py               # ML training, cross-validation, and C code exporter
-├── features.py            # Time/frequency domain feature extraction
-├── data_gen.py            # Physics-based synthetic vibration generator
-├── edge_vs_cloud.py       # Latency and bandwidth benchmark simulation
-├── edge_features.h        # C implementation of feature extraction for ESP32
-├── model.h                # Exported C code of trained Random Forest (synthetic)
-├── model_mafaulda.h       # Exported C code trained on MaFaulDA dataset
-├── model_combined.h       # Exported C code trained on combined MaFaulDA + CWRU (97.9% Acc)
-├── train_mafaulda.py      # Real-world MaFaulDA training pipeline
-├── train_combined.py      # Combined MaFaulDA + CWRU training pipeline
-├── download_sample.py     # Script to pull targeted MaFaulDA files
-├── download_cwru.py       # Script to pull CWRU .mat benchmark files
-├── sketch.ino             # ESP32 firmware for Wokwi simulation / hardware
-├── diagram.json           # Wokwi simulation hardware wiring
-├── libraries.txt          # Arduino / Wokwi libraries
-├── requirements.txt       # Python dependencies
-└── results/               # Confusion matrix, feature importance & benchmark plots
+```powershell
+python tools\capture_servo_data.py --port COM3
 ```
 
----
+At `label>`, enter one of `NORMAL`, `HIGH_FRICTION`, `MOUNTING_LOOSENESS`, `ABNORMAL_VIBRATION`, `IRREGULAR_MOVEMENT`, or `STOP`. The default capture path is under `data\`. Record independent trials in separate files when possible, and document the physical condition, servo angle, load, motion state, mounting, and supply.
 
-## 🚀 Getting Started
+Train and evaluate:
 
-### 1. Prerequisites & Installation
-
-Clone the repository and install the required dependencies:
-
-```bash
-git clone https://github.com/harshyy07/Edge-AI-Based-Predictive-Maintenance.git
-cd Edge-AI-Based-Predictive-Maintenance
-pip install -r requirements.txt
-```
-
----
-
-### 2. Step-by-Step Execution
-
-#### Step 1: Train Model & Export TinyML C Header
-Generates synthetic dataset, trains the Random Forest classifier, produces validation plots in `results/`, and exports `model.h`:
-```bash
+```powershell
 python train.py
 ```
 
-#### Step 2: Run Edge vs Cloud Latency & Bandwidth Benchmark
-Simulates network jitter, payload sizes, and generates comparative metrics:
-```bash
-python edge_vs_cloud.py
-```
+The entry point discovers `data\servo_phase1_*.csv` automatically and combines those raw samples with randomized synthetic windows. Explicit input files can be supplied with `python train.py --csv path1.csv path2.csv`. Group splitting holds out complete capture files or explicit trial IDs; adjacent windows from one capture do not cross the split. Outputs are isolated under `servo_vibration_ml\results\`, and the generated servo model is `servo_vibration_ml\model.h`.
 
-#### Step 3: Launch the Interactive Dashboard
-Start the real-time condition monitoring UI:
-```bash
-python -m streamlit run dashboard.py
-```
-Open **`http://localhost:8501`** in your browser.
-- **Simulator Mode**: Use the sidebar to inject faults (Normal, Imbalance, Bearing, etc.) and observe live waveforms, FFT spectra, and alert triggers.
-- **MQTT Mode**: Connects to a live MQTT broker to receive real-time packets from your ESP32.
+The synthetic generator uses 200 Hz, 200-sample windows, and components below 100 Hz. Its 12 features are per-axis mean, standard deviation, RMS, and absolute peak. See [servo_vibration_ml/README.md](servo_vibration_ml/README.md) for the detailed feature contract and CSV format.
 
----
+## Real measurements currently available
 
-### 3. Running Firmware Simulation in Wokwi (Optional)
+The provided pasted experiment log is real servo data, with aggregate RMS and peak measurements for DETACHED, STATIONARY_90, STATIONARY_45, STATIONARY_135, and MOVING. The readable aggregate values are extracted to `servo_vibration_ml\results\real_summary_extracted.csv`. The text does not contain raw three-axis samples or NORMAL/fault labels, so it is not used to train or evaluate the raw-window classifier. Current synthetic scores must not be presented as real fault validation.
 
-1. Open [Wokwi ESP32 Simulator](https://wokwi.com/).
-2. Create a new **ESP32** project.
-3. Copy and paste the contents of:
-   - `sketch.ino` into the main sketch tab.
-   - `diagram.json` into the diagram tab.
-   - `libraries.txt` into the library manager.
-   - `edge_features.h` and `model.h` as additional project files.
-4. Click **Start Simulation** to observe serial diagnostics and MQTT publishing.
+## ESP32 and validation status
 
----
+`sketch\sketch.ino` remains the labeled data collector. The separate runtime sketch in `servo_vibration_ml\esp32\` drives a servo, reads the MPU6050, extracts features, classifies windows, and turns on an LED and active buzzer after two consecutive non-NORMAL predictions. It uses the generated `servo_vibration_ml\esp32\model.h`; training refreshes this copy without touching the industrial model. Compile with the ESP32 Arduino core 3.x. The generated model is synthetic-heavy until sufficient independently recorded real trials are available. No firmware is uploaded by the training command.
 
-## 📊 Features Extracted on Edge (12 Total)
-- **Time-Domain**: RMS, Peak value, Crest Factor, Kurtosis, Skewness, Standard Deviation.
-- **Frequency-Domain**: Dominant Frequency, Band Energy across 5 spectrum bands (0–40 Hz, 40–80 Hz, 80–150 Hz, 150–500 Hz, 500–1000 Hz).
+## Legacy industrial motor workflow
 
----
-
-## 📜 License
-This project is open-source under the [MIT License](LICENSE).
+The original industrial project is preserved. Run `python train_hardware.py` for its recording-held-out motor model training. MaFaulDA and CWRU files remain in their existing directories, and the existing root and sketch model headers, Wokwi project, dashboard, and reports are not changed by servo training. The prior root `README.md`, `train.py`, and `requirements.txt` are backed up under `servo_vibration_ml\backups\`.

@@ -1,18 +1,19 @@
 """Real-world MaFaulDA vibration generator and dataset loader.
 Replaces synthetic equations with genuine industrial accelerometer recordings
-downsampled to the 2 kHz Edge-AI sampling pipeline with sequential continuous playback.
+anti-aliased to the MPU6050's 1 kHz output rate for sequential playback.
 """
 import os
 import glob
 import zipfile
 import numpy as np
 import pandas as pd
+from scipy.signal import resample_poly
 
-FS, N = 2000, 1024
+FS, N = 1000, 1024
 # Identical 5 classes matching the dashboard and ESP32 MQTT schema
-CLASSES = ["normal", "imbalance", "misalignment", "bearing", "looseness"]
+CLASSES = ["normal", "imbalance", "misalignment", "bearing_outer", "bearing_ball"]
 
-# Mapping from MaFaulDA folder to the 5 standard classes
+# Map real dataset labels directly; ball-bearing faults are not looseness.
 MAFAULDA_MAP = {
     0: ("normal", "normal"),
     1: ("imbalance", "imbalance"),
@@ -41,8 +42,8 @@ def _load_class_windows(cls_idx):
             with zipfile.ZipFile(z_path) as z:
                 csv_name = z.namelist()[0]
                 df = pd.read_csv(z.open(csv_name), header=None, nrows=250000)
-                # Channel 1: accelerometer signal downsampled 50 kHz -> 2 kHz
-                sig = df[1].values.astype(np.float32)[::25]
+                # Anti-alias before reducing the 50 kHz recording to 1 kHz.
+                sig = resample_poly(df[1].values.astype(np.float32), 1, 50).astype(np.float32)
                 full_sig.append(sig)
         except Exception as e:
             print(f"Error reading {z_path}: {e}")

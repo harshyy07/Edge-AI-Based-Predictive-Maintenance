@@ -7,3 +7,4 @@ joblib
 streamlit>=1.37
 paho-mqtt
 plotly
+pyserial

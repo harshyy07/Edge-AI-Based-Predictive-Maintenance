@@ -46,3 +46,10 @@ data_cwru/
 sample_data/
 selected_manifest.json
 *.joblib
+
+data/
+
+edge ai based maintenance.zip
+*.zip
+sketch/backups/
+servo_vibration_ml_backups/
